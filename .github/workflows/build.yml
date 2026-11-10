@@ -13,7 +13,8 @@ jobs:
             -I$DEVKITPRO/calico/include -I$DEVKITPRO/libnds/include \
             source/main.c \
             -specs=ds_arm9.specs -march=armv5te -mtune=arm946e-s \
-            -L$DEVKITPRO/libnds/lib -lfat -lnds9 -o ds_menu.elf
+            -L$DEVKITPRO/libnds/lib -L$DEVKITPRO/calico/lib \
+            -lfat -lnds9 -lcalico -o ds_menu.elf
           $DEVKITPRO/tools/bin/ndstool -c ds_menu.nds -9 ds_menu.elf
       - uses: actions/upload-artifact@v4
         with:
