@@ -8,11 +8,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: build
         run: |
-          arm-none-eabi-gcc source/main.c \
+          export PATH=$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH
+          $DEVKITARM/bin/arm-none-eabi-gcc source/main.c \
             -specs=ds_arm9.specs -march=armv5te -mtune=arm946e-s \
             -I$DEVKITPRO/libnds/include -L$DEVKITPRO/libnds/lib \
             -lfat -lnds9 -o ds_menu.elf
-          ndstool -c ds_menu.nds -9 ds_menu.elf
+          $DEVKITPRO/tools/bin/ndstool -c ds_menu.nds -9 ds_menu.elf
       - uses: actions/upload-artifact@v4
         with:
           name: ds_menu
