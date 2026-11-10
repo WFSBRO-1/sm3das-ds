@@ -13,7 +13,9 @@ jobs:
           rm -rf proj && cp -r "$EX" proj
           mkdir -p proj/source
           cp source/main.c proj/source/main.c
-          cd proj && make
+          cd proj
+          sed -i 's/-lnds9/-lfat -lnds9/' Makefile
+          make
           find . -name "*.nds" | head -1 | xargs -I{} cp {} ../ds_menu.nds
           cd ..
       - uses: actions/upload-artifact@v4
