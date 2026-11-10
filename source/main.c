@@ -1,11 +1,10 @@
 #include <nds.h>
-#include <fat.h>
+#include <filesystem.h>
 #include <stdio.h>
 
 #define W 256
 #define H 192
 #define NGAMES 3
-#define KEY_Y_BIT (1 << 11)
 
 static u16 buf[W * H];
 static int game = 0;
@@ -20,12 +19,19 @@ static bool loadBin(const char *path, u16 *dst) {
     return n == W * H;
 }
 
+static void fillBuf(u16 color) {
+    for (int i = 0; i < W * H; i++) buf[i] = color;
+}
+
 static void showGame(void) {
     char p[64];
-    snprintf(p, sizeof p, "/ds_menu/top%d.bin", game);
-    if (loadBin(p, buf)) dmaCopy(buf, bgGetGfxPtr(bgTop), W * H * 2);
-    snprintf(p, sizeof p, "/ds_menu/title%d.bin", game);
-    if (loadBin(p, buf)) dmaCopy(buf, bgGetGfxPtr(bgBot), W * H * 2);
+    snprintf(p, sizeof p, "nitro:/top%d.bin", game);
+    if (!loadBin(p, buf)) fillBuf(0x001F);
+    dmaCopy(buf, bgGetGfxPtr(bgTop), W * H * 2);
+
+    snprintf(p, sizeof p, "nitro:/title%d.bin", game);
+    if (!loadBin(p, buf)) fillBuf(0x03E0);
+    dmaCopy(buf, bgGetGfxPtr(bgBot), W * H * 2);
 }
 
 static void startGame(void) {
@@ -39,7 +45,7 @@ int main(void) {
     bgTop = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
     bgBot = bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
 
-    fatInitDefault();
+    nitroFSInit(NULL);
     showGame();
 
     while (1) {
@@ -51,7 +57,7 @@ int main(void) {
 
         if (down & KEY_RIGHT) { game = (game + 1) % NGAMES; showGame(); }
         if (down & KEY_LEFT)  { game = (game + NGAMES - 1) % NGAMES; showGame(); }
-        if (down & KEY_Y_BIT) { track = (track + 1) % NGAMES; }
+        if (down & KEY_Y)     { track = (track + 1) % NGAMES; }
         if (down & (KEY_START | KEY_A)) startGame();
         if (down & KEY_TOUCH) {
             touchPosition t;
