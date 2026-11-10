@@ -8,15 +8,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: build
         run: |
-          dkp-pacman -Sy --noconfirm nds-dev
-          export PATH=$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH
-          $DEVKITARM/bin/arm-none-eabi-gcc -DARM9 -D__ARM9__ -D__NDS__ \
-            -I$DEVKITPRO/libnds/include -I$DEVKITPRO/calico/include \
-            source/main.c \
-            -specs=ds_arm9.specs -march=armv5te -mtune=arm946e-s \
-            -L$DEVKITPRO/libnds/lib -L$DEVKITPRO/calico/lib \
-            -lfat -lnds9 -o ds_menu.elf
-          $DEVKITPRO/tools/bin/ndstool -c ds_menu.nds -9 ds_menu.elf
+          set -e
+          EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
+          rm -rf proj && cp -r "$EX" proj
+          mkdir -p proj/source
+          cp source/main.c proj/source/main.c
+          cd proj && make
+          find . -name "*.nds" | head -1 | xargs -I{} cp {} ../ds_menu.nds
+          cd ..
       - uses: actions/upload-artifact@v4
         with:
           name: ds_menu
