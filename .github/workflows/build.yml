@@ -9,7 +9,7 @@ jobs:
       - name: build
         run: |
           export PATH=$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH
-          $DEVKITARM/bin/arm-none-eabi-gcc -DARM9 -DNDS \
+          $DEVKITARM/bin/arm-none-eabi-gcc -DARM9 -D__ARM9__ -D__NDS__ \
             -I$DEVKITPRO/calico/include -I$DEVKITPRO/libnds/include \
             source/main.c \
             -specs=ds_arm9.specs -march=armv5te -mtune=arm946e-s \
