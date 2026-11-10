@@ -9,10 +9,11 @@ jobs:
       - name: build
         run: |
           export PATH=$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH
-          $DEVKITARM/bin/arm-none-eabi-gcc -DARM9 source/main.c \
+          $DEVKITARM/bin/arm-none-eabi-gcc -DARM9 -DNDS \
+            -I$DEVKITPRO/calico/include -I$DEVKITPRO/libnds/include \
+            source/main.c \
             -specs=ds_arm9.specs -march=armv5te -mtune=arm946e-s \
-            -I$DEVKITPRO/libnds/include -L$DEVKITPRO/libnds/lib \
-            -lfat -lnds9 -o ds_menu.elf
+            -L$DEVKITPRO/libnds/lib -lfat -lnds9 -o ds_menu.elf
           $DEVKITPRO/tools/bin/ndstool -c ds_menu.nds -9 ds_menu.elf
       - uses: actions/upload-artifact@v4
         with:
