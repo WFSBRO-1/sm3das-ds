@@ -6,16 +6,19 @@
 #define W 256
 #define H 192
 #define NGAMES 3
-#define CHUNK 16384
+#define CHUNK 8192
+#define VOL 60
+#define FADE 128
 
 static u16 buf[W * H];
 static int game = 0;
-static int track = 0;
 static u16 *topGfx, *botGfx;
 
 static FILE *music = NULL;
-static u8 chunk[CHUNK];
-static int chanBusy = -1;
+static u8 chunkA[CHUNK], chunkB[CHUNK];
+static u8 *cbuf[2] = { chunkA, chunkB };
+static int ch[2] = { -1, -1 };
+static int slot = 0;
 
 static const char *trackPath[NGAMES] = {
     "/smds3das/track0.raw",
@@ -49,8 +52,10 @@ static void showGame(void) {
 }
 
 static void stopMusic(void) {
-    if (chanBusy >= 0) soundKill(chanBusy);
-    chanBusy = -1;
+    for (int i = 0; i < 2; i++) {
+        if (ch[i] >= 0) soundKill(ch[i]);
+        ch[i] = -1;
+    }
     if (music) {
         fclose(music);
         music = NULL;
@@ -62,19 +67,30 @@ static void openTrack(int t) {
     music = fopen(trackPath[t], "rb");
 }
 
-static void feedMusic(void) {
+static void playSlot(int s) {
     if (!music) return;
-    if (chanBusy >= 0 && chanPlaying(chanBusy)) return;
-
-    size_t n = fread(chunk, 1, CHUNK, music);
+    size_t n = fread(cbuf[s], 1, CHUNK, music);
     if (n == 0) {
         rewind(music);
-        return;
+        n = fread(cbuf[s], 1, CHUNK, music);
+        if (n == 0) return;
     }
     for (size_t i = 0; i < n; i++) {
-        chunk[i] ^= 0x80;
+        s8 v = (s8)(cbuf[s][i] ^ 0x80);
+        int g = 128;
+        if (i < FADE) g = (int)i * 128 / FADE;
+        else if (n - i < FADE) g = (int)(n - i) * 128 / FADE;
+        cbuf[s][i] = (u8)(((int)v * g) >> 7);
     }
-    chanBusy = soundPlaySample(chunk, SoundFormat_8Bit, n, 22050, 100, 64, false, 0);
+    ch[s] = soundPlaySample(cbuf[s], SoundFormat_8Bit, n, 22050, VOL, 64, false, 0);
+}
+
+static void feedMusic(void) {
+    if (!music) return;
+    if (ch[slot] < 0 || !chanPlaying(ch[slot])) {
+        playSlot(slot);
+        slot ^= 1;
+    }
 }
 
 int main(void) {
@@ -93,8 +109,9 @@ int main(void) {
     soundEnable();
 
     showGame();
-    openTrack(track);
+    openTrack(0);
 
+    int track = 0;
     while (1) {
         swiWaitForVBlank();
         scanKeys();
