@@ -76,11 +76,11 @@ static void playSlot(int s) {
         if (n == 0) return;
     }
     for (size_t i = 0; i < n; i++) {
-        s8 v = (s8)(cbuf[s][i] ^ 0x80);
+        int v = (int)cbuf[s][i] - 128;
         int g = 128;
         if (i < FADE) g = (int)i * 128 / FADE;
         else if (n - i < FADE) g = (int)(n - i) * 128 / FADE;
-        cbuf[s][i] = (u8)(((int)v * g) >> 7);
+        cbuf[s][i] = (u8)(((v * g) >> 7) + 128);
     }
     ch[s] = soundPlaySample(cbuf[s], SoundFormat_8Bit, n, 22050, VOL, 64, false, 0);
 }
