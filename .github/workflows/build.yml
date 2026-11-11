@@ -1,4 +1,4 @@
-name: build-stock
+name: build-nds
 on: [push, workflow_dispatch]
 jobs:
   build:
@@ -6,16 +6,20 @@ jobs:
     container: devkitpro/devkitarm
     steps:
       - uses: actions/checkout@v4
-      - name: build stock example
+      - name: build
         run: |
           set -e
-          EX=$(find $DEVKITPRO/examples/nds -maxdepth 2 -iname "*hello*" -type d | head -1)
-          echo "example: $EX"
-          cp -r "$EX" /tmp/ex && cd /tmp/ex
-          make
-          mkdir -p $GITHUB_WORKSPACE/out
-          find . -name "*.nds" | head -1 | xargs -I{} cp {} $GITHUB_WORKSPACE/out/stock.nds
+          EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
+          rm -rf proj && cp -r "$EX" proj
+          mkdir -p proj/source proj/nitro
+          cp source/main.c proj/source/main.c
+          cp assets/*.bin proj/nitro/
+          cd proj
+          sed -i 's/-lnds9/-lfilesystem -lfat -lnds9/' Makefile
+          make NITRO_FILES=$(pwd)/nitro
+          find . -name "*.nds" | head -1 | xargs -I{} cp {} ../ds_menu.nds
+          cd ..
       - uses: actions/upload-artifact@v4
         with:
-          name: stock
-          path: out/stock.nds
+          name: ds_menu
+          path: ds_menu.nds
