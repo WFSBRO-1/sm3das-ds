@@ -23,6 +23,10 @@ static const char *trackPath[NGAMES] = {
     "/smds3das/track2.raw"
 };
 
+static bool chanPlaying(int n) {
+    return (*(vu32 *)(0x04000400 + 16 * n + 8)) & (1u << 31);
+}
+
 static void drawFile(const char *path, u16 *dst, u16 fallback) {
     FILE *f = fopen(path, "rb");
     if (f) {
@@ -45,7 +49,7 @@ static void showGame(void) {
 }
 
 static void stopMusic(void) {
-    for (int i = 0; i < 16; i++) SCHANNEL_CR(i) = 0;
+    if (chanBusy >= 0) soundKill(chanBusy);
     chanBusy = -1;
     if (music) { fclose(music); music = NULL; }
 }
@@ -57,56 +61,11 @@ static void openTrack(int t) {
 
 static void feedMusic(void) {
     if (!music) return;
-    if (chanBusy >= 0 && (SCHANNEL_CR(chanBusy) & SOUND_ENABLE)) return;
+    if (chanBusy >= 0 && chanPlaying(chanBusy)) return;
 
     size_t n = fread(chunk, 1, CHUNK, music);
     if (n == 0) {
         rewind(music);
         return;
     }
-    for (size_t i = 0; i < n; i++) chunk[i] ^= 0x80;
-    chanBusy = soundPlaySample(chunk, SoundFormat_8Bit, n, 22050, 100, 64, false, 0);
-}
-
-int main(void) {
-    vramSetPrimaryBanks(VRAM_A_MAIN_BG_0x06000000, VRAM_B_MAIN_BG_0x06020000,
-                        VRAM_C_SUB_BG, VRAM_D_LCD);
-    videoSetMode(MODE_5_2D);
-    videoSetModeSub(MODE_5_2D);
-
-    int bt = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-    int bb = bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-    topGfx = bgGetGfxPtr(bt);
-    botGfx = bgGetGfxPtr(bb);
-
-    nitroFSInit(NULL);
-    fatInitDefault();
-    soundEnable();
-
-    showGame();
-    openTrack(track);
-
-    while (1) {
-        swiWaitForVBlank();
-        scanKeys();
-        int down = keysDown();
-
-        if ((down & KEY_RIGHT) && game < NGAMES - 1) { game++; showGame(); }
-        if ((down & KEY_LEFT) && game > 0) { game--; showGame(); }
-        if (down & KEY_Y) {
-            track = (track + 1) % NGAMES;
-            openTrack(track);
-        }
-        if (down & (KEY_START | KEY_A)) {
-        }
-        if (down & KEY_TOUCH) {
-            touchPosition t;
-            touchRead(&t);
-            if (t.py > H) {
-            }
-        }
-
-        feedMusic();
-    }
-    return 0;
-}
+    for (size_t i = 0; i
