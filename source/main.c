@@ -2,32 +2,25 @@
 #include <filesystem.h>
 #include <fat.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define W 256
 #define H 192
 #define NGAMES 3
-#define CHUNK 8192
 #define VOL 64
 
 static u16 buf[W * H];
 static int game = 0;
 static u16 *topGfx, *botGfx;
 
-static FILE *music = NULL;
-static u8 chunkA[CHUNK], chunkB[CHUNK];
-static u8 *cbuf[2] = { chunkA, chunkB };
-static int ch[2] = { -1, -1 };
-static int slot = 0;
+static u8 *pcm = NULL;
+static int chan = -1;
 
 static const char *trackPath[NGAMES] = {
     "/smds3das/track0.raw",
     "/smds3das/track1.raw",
     "/smds3das/track2.raw"
 };
-
-static bool chanPlaying(int n) {
-    return ((*(vu32 *)(0x04000400 + 16 * n + 8)) & (1u << 31)) != 0;
-}
 
 static void drawFile(const char *path, u16 *dst, u16 fallback) {
     FILE *f = fopen(path, "rb");
@@ -51,38 +44,29 @@ static void showGame(void) {
 }
 
 static void stopMusic(void) {
-    for (int i = 0; i < 2; i++) {
-        if (ch[i] >= 0) soundKill(ch[i]);
-        ch[i] = -1;
-    }
-    if (music) {
-        fclose(music);
-        music = NULL;
+    if (chan >= 0) soundKill(chan);
+    chan = -1;
+    if (pcm) {
+        free(pcm);
+        pcm = NULL;
     }
 }
 
-static void openTrack(int t) {
+static void playTrack(int t) {
     stopMusic();
-    music = fopen(trackPath[t], "rb");
-}
-
-static void playSlot(int s) {
-    if (!music) return;
-    size_t n = fread(cbuf[s], 1, CHUNK, music);
-    if (n == 0) {
-        rewind(music);
-        n = fread(cbuf[s], 1, CHUNK, music);
-        if (n == 0) return;
+    FILE *f = fopen(trackPath[t], "rb");
+    if (!f) return;
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    rewind(f);
+    pcm = malloc(len);
+    if (!pcm) {
+        fclose(f);
+        return;
     }
-    ch[s] = soundPlaySample(cbuf[s], SoundFormat_8Bit, n, 22050, VOL, 64, false, 0);
-}
-
-static void feedMusic(void) {
-    if (!music) return;
-    if (ch[slot] < 0 || !chanPlaying(ch[slot])) {
-        playSlot(slot);
-        slot ^= 1;
-    }
+    fread(pcm, 1, len, f);
+    fclose(f);
+    chan = soundPlaySample(pcm, SoundFormat_8Bit, len, 11025, VOL, 64, true, 0);
 }
 
 int main(void) {
@@ -101,9 +85,9 @@ int main(void) {
     soundEnable();
 
     showGame();
-    openTrack(0);
-
     int track = 0;
+    playTrack(track);
+
     while (1) {
         swiWaitForVBlank();
         scanKeys();
@@ -119,10 +103,8 @@ int main(void) {
         }
         if (down & KEY_Y) {
             track = (track + 1) % NGAMES;
-            openTrack(track);
+            playTrack(track);
         }
-
-        feedMusic();
     }
     return 0;
 }
