@@ -7,7 +7,7 @@
 #define H 192
 #define NGAMES 3
 #define CHUNK 8192
-#define VOL 20
+#define VOL 64
 
 static u16 buf[W * H];
 static int game = 0;
