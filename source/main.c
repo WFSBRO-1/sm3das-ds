@@ -7,8 +7,9 @@
 #define H 192
 #define NGAMES 3
 #define CHUNK 8192
-#define VOL 0
+#define VOL 20
 #define FADE 128
+#define TEST_TONE 1
 
 static u16 buf[W * H];
 static int game = 0;
@@ -19,6 +20,7 @@ static u8 chunkA[CHUNK], chunkB[CHUNK];
 static u8 *cbuf[2] = { chunkA, chunkB };
 static int ch[2] = { -1, -1 };
 static int slot = 0;
+static int phase = 0;
 
 static const char *trackPath[NGAMES] = {
     "/smds3das/track0.raw",
@@ -64,10 +66,19 @@ static void stopMusic(void) {
 
 static void openTrack(int t) {
     stopMusic();
+#if !TEST_TONE
     music = fopen(trackPath[t], "rb");
+#endif
 }
 
 static void playSlot(int s) {
+#if TEST_TONE
+    for (int i = 0; i < CHUNK; i++) {
+        cbuf[s][i] = (u8)(128 + (sinLerp((phase >> 4) & 511) >> 5));
+        phase += 10;
+    }
+    ch[s] = soundPlaySample(cbuf[s], SoundFormat_8Bit, CHUNK, 22050, VOL, 64, false, 0);
+#else
     if (!music) return;
     size_t n = fread(cbuf[s], 1, CHUNK, music);
     if (n == 0) {
@@ -83,10 +94,13 @@ static void playSlot(int s) {
         cbuf[s][i] = (u8)(((v * g) >> 7) + 128);
     }
     ch[s] = soundPlaySample(cbuf[s], SoundFormat_8Bit, n, 22050, VOL, 64, false, 0);
+#endif
 }
 
 static void feedMusic(void) {
+#if !TEST_TONE
     if (!music) return;
+#endif
     if (ch[slot] < 0 || !chanPlaying(ch[slot])) {
         playSlot(slot);
         slot ^= 1;
