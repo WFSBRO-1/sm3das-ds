@@ -54,7 +54,7 @@ static void playTone(void) {
         int v = (sinLerp(angle) * 100) / 4096;
         pcm[i] = (u8)(128 + v);
     }
-    chan = soundPlaySample(pcm, SoundFormat_8Bit, RATE, RATE, VOL, 64, true, 0);
+        chan = soundPlaySample(pcm, SoundFormat_8Bit, RATE, RATE * 2, VOL, 64, true, 0);
 }
 
 int main(void) {
