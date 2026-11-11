@@ -8,6 +8,8 @@
 #define H 192
 #define NGAMES 3
 #define VOL 64
+#define RATE 11025
+#define TONE_HZ 440
 
 static u16 buf[W * H];
 static int game = 0;
@@ -15,12 +17,6 @@ static u16 *topGfx, *botGfx;
 
 static u8 *pcm = NULL;
 static int chan = -1;
-
-static const char *trackPath[NGAMES] = {
-    "/smds3das/track0.raw",
-    "/smds3das/track1.raw",
-    "/smds3das/track2.raw"
-};
 
 static void drawFile(const char *path, u16 *dst, u16 fallback) {
     FILE *f = fopen(path, "rb");
@@ -43,30 +39,22 @@ static void showGame(void) {
     drawFile(p, botGfx, RGB15(0, 31, 0) | BIT(15));
 }
 
-static void stopMusic(void) {
+static void playTone(void) {
     if (chan >= 0) soundKill(chan);
     chan = -1;
     if (pcm) {
         free(pcm);
         pcm = NULL;
     }
-}
 
-static void playTrack(int t) {
-    stopMusic();
-    FILE *f = fopen(trackPath[t], "rb");
-    if (!f) return;
-    fseek(f, 0, SEEK_END);
-    long len = ftell(f);
-    rewind(f);
-    pcm = malloc(len);
-    if (!pcm) {
-        fclose(f);
-        return;
+    pcm = malloc(RATE);
+    if (!pcm) return;
+    for (int i = 0; i < RATE; i++) {
+        int angle = (i * TONE_HZ * 512 / RATE) & 511;
+        int v = (sinLerp(angle) * 100) / 4096;
+        pcm[i] = (u8)(128 + v);
     }
-    fread(pcm, 1, len, f);
-    fclose(f);
-    chan = soundPlaySample(pcm, SoundFormat_8Bit, len, 11025, VOL, 64, true, 0);
+    chan = soundPlaySample(pcm, SoundFormat_8Bit, RATE, RATE, VOL, 64, true, 0);
 }
 
 int main(void) {
@@ -85,8 +73,7 @@ int main(void) {
     soundEnable();
 
     showGame();
-    int track = 0;
-    playTrack(track);
+    playTone();
 
     while (1) {
         swiWaitForVBlank();
@@ -100,10 +87,6 @@ int main(void) {
         if ((down & KEY_LEFT) && game > 0) {
             game--;
             showGame();
-        }
-        if (down & KEY_Y) {
-            track = (track + 1) % NGAMES;
-            playTrack(track);
         }
     }
     return 0;
