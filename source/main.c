@@ -7,7 +7,7 @@
 #define H 192
 #define NGAMES 3
 #define CHUNK 8192
-#define VOL 60
+#define VOL 12
 #define FADE 128
 
 static u16 buf[W * H];
