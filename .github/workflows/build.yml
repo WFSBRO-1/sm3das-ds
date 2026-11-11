@@ -16,12 +16,14 @@ jobs:
           cp assets/*.bin proj/nitro/
           cd proj
           sed -i 's/-lnds9/-lfilesystem -lfat -lnds9/' Makefile
-          make -k || true
-          ls -la proj.elf
-          ARM7=$(find $DEVKITPRO -iname "*arm7*.elf" | grep -i default | head -1)
-          echo "arm7: $ARM7"
-          $DEVKITPRO/tools/bin/ndstool -c ../ds_menu.nds -9 proj.elf -7 "$ARM7" -d nitro
+          make
+          NDS=$(find . -maxdepth 1 -name "*.nds" | head -1)
+          echo "base rom: $NDS"
+          $DEVKITPRO/tools/bin/ndstool -x "$NDS" -9 arm9.bin -7 arm7.bin
+          ls -la arm9.bin arm7.bin nitro
+          $DEVKITPRO/tools/bin/ndstool -c ../ds_menu.nds -9 arm9.bin -7 arm7.bin -d nitro
           ls -la ../ds_menu.nds
+          cd ..
       - uses: actions/upload-artifact@v4
         with:
           name: ds_menu
