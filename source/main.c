@@ -24,7 +24,7 @@ static const char *trackPath[NGAMES] = {
 };
 
 static bool chanPlaying(int n) {
-    return (*(vu32 *)(0x04000400 + 16 * n + 8)) & (1u << 31);
+    return ((*(vu32 *)(0x04000400 + 16 * n + 8)) & (1u << 31)) != 0;
 }
 
 static void drawFile(const char *path, u16 *dst, u16 fallback) {
@@ -51,7 +51,10 @@ static void showGame(void) {
 static void stopMusic(void) {
     if (chanBusy >= 0) soundKill(chanBusy);
     chanBusy = -1;
-    if (music) { fclose(music); music = NULL; }
+    if (music) {
+        fclose(music);
+        music = NULL;
+    }
 }
 
 static void openTrack(int t) {
@@ -68,4 +71,49 @@ static void feedMusic(void) {
         rewind(music);
         return;
     }
-    for (size_t i = 0; i
+    for (size_t i = 0; i < n; i++) {
+        chunk[i] ^= 0x80;
+    }
+    chanBusy = soundPlaySample(chunk, SoundFormat_8Bit, n, 22050, 100, 64, false, 0);
+}
+
+int main(void) {
+    vramSetPrimaryBanks(VRAM_A_MAIN_BG_0x06000000, VRAM_B_MAIN_BG_0x06020000,
+                        VRAM_C_SUB_BG, VRAM_D_LCD);
+    videoSetMode(MODE_5_2D);
+    videoSetModeSub(MODE_5_2D);
+
+    int bt = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
+    int bb = bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
+    topGfx = bgGetGfxPtr(bt);
+    botGfx = bgGetGfxPtr(bb);
+
+    nitroFSInit(NULL);
+    fatInitDefault();
+    soundEnable();
+
+    showGame();
+    openTrack(track);
+
+    while (1) {
+        swiWaitForVBlank();
+        scanKeys();
+        int down = keysDown();
+
+        if ((down & KEY_RIGHT) && game < NGAMES - 1) {
+            game++;
+            showGame();
+        }
+        if ((down & KEY_LEFT) && game > 0) {
+            game--;
+            showGame();
+        }
+        if (down & KEY_Y) {
+            track = (track + 1) % NGAMES;
+            openTrack(track);
+        }
+
+        feedMusic();
+    }
+    return 0;
+}
