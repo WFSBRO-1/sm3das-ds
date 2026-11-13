@@ -10,16 +10,18 @@ jobs:
         run: |
           set -e
           apt-get update -qq && apt-get install -y -qq git >/dev/null
-          git clone --depth 1 https://github.com/devkitPro/nds-hb-menu /tmp/hbmenu
+          git clone --depth 1 --recursive https://github.com/devkitPro/nds-hb-menu /tmp/hbmenu
+          (cd /tmp/hbmenu && make 2>&1 | tail -5) || true
           EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
           rm -rf proj && cp -r "$EX" proj
           mkdir -p proj/source proj/nitro
           cp source/main.c proj/source/main.c
-          cp /tmp/hbmenu/source/nds_loader_arm9.c proj/source/ || true
-          cp /tmp/hbmenu/source/nds_loader_arm9.h proj/source/ || true
-          cp /tmp/hbmenu/source/load_bin.h proj/source/ || true
-          cp /tmp/hbmenu/source/bootstub_bin.h proj/source/ || true
-          cp /tmp/hbmenu/source/exceptionstub_bin.h proj/source/ || true
+          cp /tmp/hbmenu/source/nds_loader_arm9.c proj/source/
+          cp /tmp/hbmenu/source/nds_loader_arm9.h proj/source/
+          for h in load_bin.h bootstub_bin.h exceptionstub_bin.h; do
+            f=$(find /tmp/hbmenu -name "$h" | head -1)
+            if [ -n "$f" ]; then cp "$f" proj/source/; fi
+          done
           cp assets/*.bin proj/nitro/
           echo "== loader files:"; ls proj/source
           cd proj
