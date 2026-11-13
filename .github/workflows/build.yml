@@ -25,9 +25,9 @@ jobs:
           cd proj
           sed -i 's/-lnds9/-lfilesystem -lfat -lnds9/' Makefile
           make
-          find . -maxdepth 1 -name "*.nds" -exec cp {} ../ds_menu.nds \;
+          find . -maxdepth 1 -name "*.nds" -exec cp {} ../Super_Mario_3D_All_Stars_DS.nds \;
           cd ..
       - uses: actions/upload-artifact@v4
         with:
-          name: ds_menu
-          path: ds_menu.nds
+          name: Super_Mario_3D_All_Stars_DS
+          path: Super_Mario_3D_All_Stars_DS.nds
