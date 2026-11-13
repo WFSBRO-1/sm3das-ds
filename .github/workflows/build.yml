@@ -12,9 +12,12 @@ jobs:
           apt-get update -qq && apt-get install -y -qq git >/dev/null
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git clone --depth 1 --recursive https://github.com/devkitPro/nds-hb-menu /tmp/hbmenu
-          (cd /tmp/hbmenu && make 2>&1 | tail -3) || true
-          STUBS=$(find /tmp/hbmenu -name "*.o" | grep -Ei "stub|load" | grep -vi "nds_loader" | tr '\n' ' ')
-          echo "== stub objects: $STUBS"
+          (cd /tmp/hbmenu && make >/dev/null 2>&1) || true
+          OBJS=""
+          for o in bootstub.bin.o exceptionstub.bin.o load.bin.o; do
+            f=$(find /tmp/hbmenu/build -name "$o" | head -1)
+            OBJS="$OBJS $f"
+          done
           EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
           rm -rf proj && cp -r "$EX" proj
           mkdir -p proj/source proj/nitro
@@ -27,7 +30,7 @@ jobs:
           done
           cp assets/*.bin proj/nitro/
           cd proj
-          sed -i "s#-lnds9#$STUBS -lfilesystem -lfat -lnds9#" Makefile
+          sed -i "s#-lnds9#$OBJS -lfilesystem -lfat -lnds9#" Makefile
           make
           find . -maxdepth 1 -name "*.nds" -exec cp {} ../Super_Mario_3D_All_Stars_DS.nds \;
           cd ..
