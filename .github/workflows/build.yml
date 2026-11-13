@@ -9,24 +9,25 @@ jobs:
       - name: build
         run: |
           set -e
+          apt-get update -qq && apt-get install -y -qq git >/dev/null
+          git clone --depth 1 https://github.com/devkitPro/nds-hb-menu /tmp/hbmenu
           EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
           rm -rf proj && cp -r "$EX" proj
           mkdir -p proj/source proj/nitro
           cp source/main.c proj/source/main.c
+          cp /tmp/hbmenu/source/nds_loader_arm9.c proj/source/ || true
+          cp /tmp/hbmenu/source/nds_loader_arm9.h proj/source/ || true
+          cp /tmp/hbmenu/source/load_bin.h proj/source/ || true
+          cp /tmp/hbmenu/source/bootstub_bin.h proj/source/ || true
+          cp /tmp/hbmenu/source/exceptionstub_bin.h proj/source/ || true
           cp assets/*.bin proj/nitro/
+          echo "== loader files:"; ls proj/source
           cd proj
           sed -i 's/-lnds9/-lfilesystem -lfat -lnds9/' Makefile
           make
-          NDS=$(find . -maxdepth 1 -name "*.nds" | head -1)
-          $DEVKITPRO/tools/bin/ndstool -x "$NDS" -9 arm9.bin -7 arm7.bin
-          ICON=""
-          if [ -f ../assets/icon.bmp ]; then ICON="-b ../assets/icon.bmp"; fi
-          $DEVKITPRO/tools/bin/ndstool -c "Super_Mario_3D_All_Stars_DS.nds" \
-            -9 arm9.bin -7 arm7.bin -d nitro \
-            $ICON "Super Mario 3D All Stars DS;Sunshine / 64 / Galaxy;WFSBRO"
-          mv "Super_Mario_3D_All_Stars_DS.nds" ../
+          find . -maxdepth 1 -name "*.nds" -exec cp {} ../ds_menu.nds \;
           cd ..
       - uses: actions/upload-artifact@v4
         with:
-          name: Super_Mario_3D_All_Stars_DS
-          path: Super_Mario_3D_All_Stars_DS.nds
+          name: ds_menu
+          path: ds_menu.nds
