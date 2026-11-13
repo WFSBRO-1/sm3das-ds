@@ -10,6 +10,7 @@ jobs:
         run: |
           set -e
           apt-get update -qq && apt-get install -y -qq git >/dev/null
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
           git clone --depth 1 --recursive https://github.com/devkitPro/nds-hb-menu /tmp/hbmenu
           (cd /tmp/hbmenu && make 2>&1 | tail -5) || true
           EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
