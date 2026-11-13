@@ -18,23 +18,19 @@ jobs:
             f=$(find /tmp/hbmenu/build -name "$o" | head -1)
             OBJS="$OBJS $f"
           done
+          NAME=Super_Mario_3D_All_Stars_DS
           EX=$(dirname "$(find $DEVKITPRO/examples/nds -name Makefile | head -1)")
-          rm -rf proj && cp -r "$EX" proj
-          mkdir -p proj/source proj/nitro
-          cp source/main.c proj/source/main.c
-          cp /tmp/hbmenu/source/nds_loader_arm9.c proj/source/
-          cp /tmp/hbmenu/source/nds_loader_arm9.h proj/source/
+          rm -rf $NAME && cp -r "$EX" $NAME
+          mkdir -p $NAME/source $NAME/nitro
+          cp source/main.c $NAME/source/main.c
+          cp /tmp/hbmenu/source/nds_loader_arm9.c $NAME/source/
+          cp /tmp/hbmenu/source/nds_loader_arm9.h $NAME/source/
           for h in load_bin.h bootstub_bin.h exceptionstub_bin.h; do
             f=$(find /tmp/hbmenu -name "$h" | head -1)
-            if [ -n "$f" ]; then cp "$f" proj/source/; fi
+            if [ -n "$f" ]; then cp "$f" $NAME/source/; fi
           done
-          cp assets/*.bin proj/nitro/
-          cd proj
+          cp assets/*.bin $NAME/nitro/
+          if [ -f assets/icon.bmp ]; then cp assets/icon.bmp $NAME/icon.bmp; fi
+          cd $NAME
           sed -i "s#-lnds9#$OBJS -lfilesystem -lfat -lnds9#" Makefile
-          make
-          find . -maxdepth 1 -name "*.nds" -exec cp {} ../Super_Mario_3D_All_Stars_DS.nds \;
-          cd ..
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Super_Mario_3D_All_Stars_DS
-          path: Super_Mario_3D_All_Stars_DS.nds
+          make ICON=icon.bmp NITRO_FILES=nitro TITLE="Super Mario 3D All Stars DS;Sunshine / 64 / Galaxy;WFSBRO"
