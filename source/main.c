@@ -1,5 +1,5 @@
 #include <nds.h>
-#include <nds_loader_arm9.h>
+#include "nds_loader_arm9.h"
 #include <filesystem.h>
 #include <fat.h>
 #include <dirent.h>
