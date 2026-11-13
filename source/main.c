@@ -1,4 +1,5 @@
 #include <nds.h>
+#include <nds_loader_arm9.h>
 #include <filesystem.h>
 #include <fat.h>
 #include <dirent.h>
@@ -53,9 +54,9 @@ static void scanGames(void) {
 
 static void launchGame(void) {
     if (game >= nFound) return;
-    char p[128];
-    snprintf(p, sizeof p, "%s/%s", GAME_DIR, names[game]);
-    runNdsFile(p);
+    char p[160];
+    snprintf(p, sizeof p, "fat:%s/%s", GAME_DIR, names[game]);
+    runNdsFile(p, 0, NULL);
 }
 
 int main(void) {
