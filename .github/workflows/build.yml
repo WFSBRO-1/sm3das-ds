@@ -18,13 +18,15 @@ jobs:
           sed -i 's/-lnds9/-lfilesystem -lfat -lnds9/' Makefile
           make
           NDS=$(find . -maxdepth 1 -name "*.nds" | head -1)
-          echo "base rom: $NDS"
           $DEVKITPRO/tools/bin/ndstool -x "$NDS" -9 arm9.bin -7 arm7.bin
-          ls -la arm9.bin arm7.bin nitro
-          $DEVKITPRO/tools/bin/ndstool -c ../ds_menu.nds -9 arm9.bin -7 arm7.bin -d nitro
-          ls -la ../ds_menu.nds
+          ICON=""
+          if [ -f ../assets/icon.bmp ]; then ICON="-b ../assets/icon.bmp"; fi
+          $DEVKITPRO/tools/bin/ndstool -c "Super_Mario_3D_All_Stars_DS.nds" \
+            -9 arm9.bin -7 arm7.bin -d nitro \
+            $ICON "Super Mario 3D All Stars DS;Sunshine / 64 / Galaxy;WFSBRO"
+          mv "Super_Mario_3D_All_Stars_DS.nds" ../
           cd ..
       - uses: actions/upload-artifact@v4
         with:
-          name: ds_menu
-          path: ds_menu.nds
+          name: Super_Mario_3D_All_Stars_DS
+          path: Super_Mario_3D_All_Stars_DS.nds
