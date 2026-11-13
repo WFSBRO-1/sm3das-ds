@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define GAME_DIR "/roms/nds/sm3dsas"
+
 int main(void) {
     videoSetModeSub(MODE_0_2D);
     vramSetBankC(VRAM_C_SUB_BG);
@@ -12,9 +14,9 @@ int main(void) {
     if (!fatInitDefault()) {
         iprintf("NO SD CARD\n");
     } else {
-        DIR *d = opendir("/roms/nds");
+        DIR *d = opendir(GAME_DIR);
         if (!d) {
-            iprintf("no /roms/nds\n");
+            iprintf("no %s\n", GAME_DIR);
         } else {
             struct dirent *e;
             int n = 0;
